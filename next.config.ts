@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+output: 'export',
   // 🧠 گام اول: فعال‌سازی آپشن توربوپک خالی جهت بی‌صدا کردن و رفع ارور کامپایلر
   turbopack: {},
 
@@ -9,4 +10,5 @@ const nextConfig = {
   }
 };
 
-export default nextConfig;
+//export default nextConfig;
+module.exports = nextConfig;

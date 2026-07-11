@@ -7,12 +7,12 @@ import ChatTab from './drawer/ChatTab';
 import RemindersTab from './drawer/RemindersTab';
 import TasksTab from './drawer/TasksTab';
 import CallsTab from './drawer/CallsTab';
-
+// 👑 اصلاح قطعی: تراز کردن اینترفیس پروپس با متدهای کارتابل جهت پاس کردن گارد کامپایلر
 interface LeadDrawerProps {
   lead: any;
   onClose: () => void;
-  onUpdate: (updated: any) => Promise<void>;
-}
+  onUpdate?: (updated?: any) => void | Promise<void>; // 🎯 تغییر کلیدی: اختیاری شدن آرگومان و پذیرش void
+} 
 
 export default function LeadDrawer({ lead, onClose, onUpdate }: LeadDrawerProps) {
   const [selectedLead, setSelectedLead] = useState<any>({ ...lead });

@@ -1,6 +1,7 @@
 //app/dashboard/workflows/page.tsx
 'use client';
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function WorkflowsPage() {
   const [agents, setAgents] = useState<any[]>([]);
@@ -9,8 +10,7 @@ export default function WorkflowsPage() {
   const [highScore, setHighScore] = useState<number>(80);
   const [vipRole, setVipRole] = useState('senior_agent');
   
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
+   const BACKEND_BASE_URL = API_BASE_URL;
 
   const loadWorkflowData = async () => {
     const token = localStorage.getItem('token');
@@ -18,12 +18,12 @@ export default function WorkflowsPage() {
 
     try {
       // لود دپارتمان‌ها
-      const dRes = await fetch(`${BACKEND_BASE_URL}/api/next/departments`, { headers });
+      const dRes = await fetch(`${BACKEND_BASE_URL}/next/departments`, { headers });
       const dData = await dRes.json();
       if (dData.status === 'success') setDepartments(dData.data || []);
 
       // 🧠 همگام‌سازی اتمیک: واکشی مستقیم از جدول یوزرز (منبع اصلی هویت کارشناسان سیستم)
-      const uRes = await fetch(`${BACKEND_BASE_URL}/api/next/users`, { headers });
+      const uRes = await fetch(`${BACKEND_BASE_URL}/next/users`, { headers });
       const uData = await uRes.json();
       if (uData.status === 'success') {
         // فیلتر کردن کلاینت‌ها و فقط نمایش اپراتورها و کارشناسان فروش در لیست
@@ -41,7 +41,7 @@ export default function WorkflowsPage() {
 
   const handleAssignDept = async (agentId: number, deptId: number) => {
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/workflows/assign-agent`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/workflows/assign-agent`, {
       method: 'POST',
       headers: { 
         'Authorization': `Bearer ${token}`,
@@ -58,7 +58,7 @@ export default function WorkflowsPage() {
 
   const handleSaveFlow = async () => {
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/workflows/store`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/workflows/store`, {
       method: 'POST',
       headers: { 
         'Authorization': `Bearer ${token}`,

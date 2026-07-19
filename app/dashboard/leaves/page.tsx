@@ -3,19 +3,19 @@
 
 import React, { useEffect, useState } from 'react';
 import HrLeaveManager from '@/components/staff/HrLeaveManager';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function LeavesPage() {
   const [userRole, setUserRole] = useState('agent');
   const [loading, setLoading] = useState(true);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`;
+    const BACKEND_BASE_URL = API_BASE_URL;
 
   useEffect(() => {
     const fetchUserRole = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/next/agent/dashboard-hub`, {
+        const res = await fetch(`${BACKEND_BASE_URL}/next/agent/dashboard-hub`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
         });
         const data = await res.json();

@@ -28,7 +28,7 @@ export default function MainSidebar() {
     // { title: 'مدیریت و دسترسی کارشناسان', path: '/dashboard/users', icon: '👥', isSupervisorOnly: true },
     // { title: 'اتاق آنالیز و گزارشات ناظر', path: '/dashboard/reports', icon: '👑', isSupervisorOnly: true },
     // { title: 'مدیریت فلوچارت و ورک‌فلوها', path: '/dashboard/workflows', icon: '🌡', isSupervisorOnly: true },
-    // { title: 'کال لاگ جامع', path: '/dashboard/call-logs', icon: '📕', isSupervisorOnly: true },
+    { title: 'کال لاگ جامع', path: '/dashboard/call-logs', icon: '📕', isSupervisorOnly: true },
   ];
 
   const handleLogout = () => {

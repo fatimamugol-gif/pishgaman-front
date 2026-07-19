@@ -3,15 +3,18 @@
 
 import React, { useState } from 'react';
 import ShamsiCalendarView from './ShamsiCalendarView'; // 🎯 لود قطعی ماژول گرافیکی تقویم
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
-export default function AdminHolidayManager({ usersList, holidaysList, BACKEND_BASE_URL, onRefresh }: any) {
+
+export default function AdminHolidayManager({ usersList, holidaysList, BACKEND_BASE_UR, onRefresh }: any) {
   const [adminHoliday, setAdminHoliday] = useState({ date: '', title: '' });
   const [customLimitForm, setCustomLimitForm] = useState({ user_id: '', limit: '' });
 
+  const BACKEND_BASE_URL = API_BASE_URL;
   const handleAddHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/admin/store-holiday`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/hr/admin/store-holiday`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ holiday_date_shamsi: adminHoliday.date, title: adminHoliday.title })
@@ -26,7 +29,7 @@ export default function AdminHolidayManager({ usersList, holidaysList, BACKEND_B
   const handleCustomLimitSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/admin/update-limit`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/hr/admin/update-limit`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: parseInt(customLimitForm.user_id), custom_limit: parseInt(customLimitForm.limit) })

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function StaffLoginPage() {
   const [username, setUsername] = useState('');
@@ -10,9 +11,7 @@ export default function StaffLoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  // 🎯 استخراج اتوماتیک آی‌پی/دامنه‌ای که در حال حاضر کاربر با آن وصل شده (حل قطعی باگ پابلیک آی‌پی شبکه)
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
+  const BACKEND_BASE_URL = API_BASE_URL;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +19,9 @@ export default function StaffLoginPage() {
     setError('');
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/auth/login`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: getAuthHeaders(false),
         body: JSON.stringify({ username, password, portal: 'staff' })
       });
       

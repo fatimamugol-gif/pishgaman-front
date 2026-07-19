@@ -2,8 +2,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
-export default function PayrollManager({ usersList, BACKEND_BASE_URL, isSupervisor }: any) {
+const BACKEND_BASE_URL = API_BASE_URL;
+
+export default function PayrollManager({ usersList, BACKEND_BASE_UR, isSupervisor }: any) {
   const [payrolls, setPayrolls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('1405/04');
@@ -15,7 +18,7 @@ export default function PayrollManager({ usersList, BACKEND_BASE_URL, isSupervis
     setLoading(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/payrolls?month_shamsi=${selectedMonth}`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/payrolls?month_shamsi=${selectedMonth}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const json = await res.json();
@@ -28,7 +31,7 @@ export default function PayrollManager({ usersList, BACKEND_BASE_URL, isSupervis
   const handleSettleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/payrolls`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/payrolls`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

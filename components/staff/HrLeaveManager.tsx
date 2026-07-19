@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import AdminAttendanceViewer from './AdminAttendanceViewer';
 import PayrollManager from './PayrollManager';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function HrLeaveManager() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'leaves' | 'holidays' | 'payroll'>('attendance');
@@ -23,8 +24,15 @@ export default function HrLeaveManager() {
     }, []);
   
   
-  // استیت هوشمند سقف مرخصی استحقاقی (پایه تناسبی ۱۸ روز برای ۹ ماه باقی‌مانده سال)
-  const [leaveBalance, setLeaveBalance] = useState({ total_allowed: 18, total_used: 0, remaining: 18 });
+  // استیت هوشمند سقف مرخصی ماهانه (8.5% قانون)
+  const [leaveBalance, setLeaveBalance] = useState({ 
+    total_allowed_hours: 15.9, 
+    total_used_hours: 0, 
+    remaining_hours: 15.9,
+    used_daily_leaves: 0,
+    monthly_working_hours: 187,
+    calculation_rule: '8.5% monthly working hours'
+  });
 
   // لایو تایمرها
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -43,8 +51,7 @@ export default function HrLeaveManager() {
   const [reviewingLeave, setReviewingLeave] = useState<any>(null);
   const [supervisorNote, setSupervisorNote] = useState('');
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`;
+  const BACKEND_BASE_URL = API_BASE_URL;
 
   const formatTimestampToPersian = (timestamp: number | null) => {
     if (!timestamp) return { dayName: '---', shamsiDate: '---', timeStr: '---' };
@@ -66,14 +73,14 @@ const loadLogsData = async () => {
     const todayStr = new Date().toISOString().slice(0, 10);
     try {
       // واکشی دیتای هاب
-      const hubRes = await fetch(`${BACKEND_BASE_URL}/api/next/agent/dashboard-hub`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const hubRes = await fetch(`${BACKEND_BASE_URL}/next/agent/dashboard-hub`, { headers: { 'Authorization': `Bearer ${token}` } });
       const hubJson = await hubRes.json();
       
       // چفت کردن نهایی نقش با دیتای سرور (پشتیبانی از هر دو متد)
       const finalRole = (hubJson.is_supervisor || localRole === 'supervisor' || localRole === 'admin') ? 'supervisor' : 'agent';
       setUserRole(finalRole);
 
-      const clockStatusRes = await fetch(`${BACKEND_BASE_URL}/api/next/hr/attendance/status?date_shamsi=${todayStr}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const clockStatusRes = await fetch(`${BACKEND_BASE_URL}/next/hr/attendance/status?date_shamsi=${todayStr}`, { headers: { 'Authorization': `Bearer ${token}` } });
       const clockJson = await clockStatusRes.json();
       if (clockJson.status === 'success') {
         setIsClockedIn(clockJson.is_clocked_in);
@@ -81,7 +88,7 @@ const loadLogsData = async () => {
         setLiveActiveSeconds(clockJson.live_active_seconds || 0);
       }
 
-      const logsRes = await fetch(`${BACKEND_BASE_URL}/api/next/hr/leaves/history`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const logsRes = await fetch(`${BACKEND_BASE_URL}/next/hr/leaves/history`, { headers: { 'Authorization': `Bearer ${token}` } });
       const logsJson = await logsRes.json();
       if (logsJson.status === 'success') {
         setClocks(logsJson.clocks || []);
@@ -91,11 +98,11 @@ const loadLogsData = async () => {
 
       // 👑 لود همزمان دیتاهای تکمیلی اتاق پایش ناظر ارشد
       if (finalRole === 'supervisor') {
-        const uRes = await fetch(`${BACKEND_BASE_URL}/api/next/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const uRes = await fetch(`${BACKEND_BASE_URL}/next/users`, { headers: { 'Authorization': `Bearer ${token}` } });
         const uData = await uRes.json();
         if (uData.status === 'success') setUsersList(uData.data || []);
 
-        const configRes = await fetch(`${BACKEND_BASE_URL}/api/next/hr/admin/config-list`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const configRes = await fetch(`${BACKEND_BASE_URL}/next/hr/admin/config-list`, { headers: { 'Authorization': `Bearer ${token}` } });
         const configJson = await configRes.json();
         if (configJson.status === 'success') setHolidaysList(configJson.holidays || []);
       }
@@ -119,12 +126,33 @@ const loadLogsData = async () => {
   const handleClockToggle = async () => {
     const token = localStorage.getItem('token');
     const todayStr = new Date().toISOString().slice(0, 10);
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/attendance/toggle`, {
+    
+    // 🎯 دریافت MAC Address دستگاه
+    const macAddress = await getMacAddress();
+    
+    const res = await fetch(`${BACKEND_BASE_URL}/next/hr/attendance/toggle`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': `Bearer ${token}`, 
+        'Content-Type': 'application/json',
+        'X-Client-MAC': macAddress
+      },
       body: JSON.stringify({ date_shamsi: todayStr })
     });
-    if (res.ok) { loadLogsData(); }
+    
+    if (res.ok) { 
+      loadLogsData(); 
+    } else {
+      const errorData = await res.json();
+      alert(errorData.message || 'خطا در ثبت تردد');
+    }
+  };
+
+  // 🎯 تابع دریافت MAC Address (شبیه‌سازی)
+  const getMacAddress = async (): Promise<string> => {
+    // در محیط واقعی، این باید از طریق API مرورگر یا سرور پروکسی دریافت شود
+    // فعلاً یک MAC آدرس نمونه برمی‌گردانیم
+    return '00:1A:2B:3C:4D:5E';
   };
 
   const handleLeaveSubmit = async (e: React.FormEvent) => {
@@ -139,7 +167,7 @@ const loadLogsData = async () => {
       return;
     }
 
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/leaves/store`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/hr/leaves/store`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -161,7 +189,7 @@ const loadLogsData = async () => {
     if (!reviewingLeave) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/leaves/review/${reviewingLeave.id}`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/hr/leaves/review/${reviewingLeave.id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, supervisor_note: supervisorNote })
@@ -178,7 +206,7 @@ const loadLogsData = async () => {
   const handleAddHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/admin/store-holiday`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/hr/admin/store-holiday`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ holiday_date_shamsi: adminHoliday.date, title: adminHoliday.title })
@@ -193,7 +221,7 @@ const loadLogsData = async () => {
   const handleCustomLimitSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/admin/update-limit`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/hr/admin/update-limit`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: parseInt(customLimitForm.user_id), custom_limit: parseInt(customLimitForm.limit) })
@@ -225,7 +253,7 @@ const loadLogsData = async () => {
         {isSupervisor && (
           <button onClick={() => setActiveTab('holidays')} className={`px-4 py-2 rounded-xl font-black transition-all cursor-pointer ${activeTab === 'holidays' ? 'bg-rose-600 text-white shadow' : 'bg-slate-100 text-slate-600'}`}>🎉 پنل ادمین: تقویم تعطیلات و سقف‌ها</button>
         )}
-        <button onClick={() => setActiveTab('payroll')} className={`px-4 py-1.5 rounded-xl font-black transition-all cursor-pointer ${activeTab === 'payroll' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-600 hover:bg-slate-50'}`}>💰 حقوق، دستمزد و کارانه‌ها</button>
+        {/* <button onClick={() => setActiveTab('payroll')} className={`px-4 py-1.5 rounded-xl font-black transition-all cursor-pointer ${activeTab === 'payroll' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-600 hover:bg-slate-50'}`}>💰 حقوق، دستمزد و کارانه‌ها</button> */}
       </div>
 
       {/* ================= تب اول: حضور و غیاب مکرر زنده ================= */}
@@ -300,22 +328,22 @@ const loadLogsData = async () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gradient-to-r from-slate-900 to-indigo-950 p-4 rounded-2xl text-white border">
             <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex justify-between items-center">
               <div>
-                <div className="text-[10px] text-slate-400 font-bold">سقف کل استحقاقی سالانه:</div>
-                <div className="text-base font-black text-white mt-1">{leaveBalance.total_allowed} روز</div>
+                <div className="text-[10px] text-slate-400 font-bold">سقف مرخصی ماهانه (8.5%):</div>
+                <div className="text-base font-black text-white mt-1">{leaveBalance.total_allowed_hours} ساعت</div>
               </div>
               <span className="text-xl">📊</span>
             </div>
             <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex justify-between items-center">
               <div>
                 <div className="text-[10px] text-slate-400 font-bold">مرخصی‌های مصرف شده:</div>
-                <div className="text-base font-black text-rose-400 mt-1">{leaveBalance.total_used} روز</div>
+                <div className="text-base font-black text-rose-400 mt-1">{leaveBalance.total_used_hours} ساعت</div>
               </div>
               <span className="text-xl">🌴</span>
             </div>
             <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex justify-between items-center bg-emerald-500/10">
               <div>
                 <div className="text-[10px] text-emerald-300 font-bold">باقیمانده مرخصی مجاز شما:</div>
-                <div className="text-base font-black text-emerald-400 mt-1">{leaveBalance.remaining} روز مجاز</div>
+                <div className="text-base font-black text-emerald-400 mt-1">{leaveBalance.remaining_hours} ساعت مجاز</div>
               </div>
               <span className="text-xl">✔️</span>
             </div>

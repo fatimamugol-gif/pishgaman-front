@@ -1,25 +1,8 @@
 // services/staffService.ts
 import { Ticket, ClientTask } from '@/types/staff';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
-const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-// const BASE_URL = `http://${currentHost}:8000/api`; 
-// موقتاً به این شکل تست کن رفیق:
-const BASE_URL = 'http://127.0.0.1:8000/api';
-
-const getAuthHeaders = (isFormData: boolean = false) => {
-  const token = localStorage.getItem('token');
-  const headers: Record<string, string> = {
-    'Authorization': `Bearer ${token}`,
-    'Accept': 'application/json',
-  };
-
-  // اگر دیتا از نوع FormData بود نباید Content-Type را دستی بگذاریم تا خود مرورگر Boundry را ست کند
-  if (!isFormData) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  return headers;
-};
+const BASE_URL = API_BASE_URL;
 
 export const staffService = {
   // ۱. دریافت لیست تیکت‌ها (مجهز به گارد ضد کش استاندارد)
@@ -150,4 +133,89 @@ export const staffService = {
   //   });
   //   return res.json();
   // },
+
+  // ۶. API های جلسات مشاوره (Consultation Sessions)
+  createConsultationSession: async (sessionData: any): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/next/consultation-sessions`, {
+      method: 'POST',
+      headers: getAuthHeaders(false),
+      body: JSON.stringify(sessionData),
+    });
+    if (!res.ok) throw new Error('خطا در ثبت جلسه مشاوره');
+    return res.json();
+  },
+
+  getConsultationSessions: async (leadId?: number): Promise<any[]> => {
+    const url = leadId 
+      ? `${BASE_URL}/next/consultation-sessions?lead_id=${leadId}`
+      : `${BASE_URL}/next/consultation-sessions`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(false),
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error('خطا در دریافت جلسات مشاوره');
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  updateConsultationSession: async (sessionId: number, sessionData: any): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/next/consultation-sessions/${sessionId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(false),
+      body: JSON.stringify(sessionData),
+    });
+    if (!res.ok) throw new Error('خطا در ویرایش جلسه مشاوره');
+    return res.json();
+  },
+
+  deleteConsultationSession: async (sessionId: number): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/next/consultation-sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(false),
+    });
+    if (!res.ok) throw new Error('خطا در حذف جلسه مشاوره');
+    return res.json();
+  },
+
+  // 🔐 مدیریت MAC Address کارشناسان
+  getAgentsWithMacAddresses: async (): Promise<any[]> => {
+    const res = await fetch(`${BASE_URL}/next/agents/mac-addresses`, {
+      method: 'GET',
+      headers: getAuthHeaders(false),
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error('خطا در دریافت لیست کارشناسان');
+    const json = await res.json();
+    return json.data || [];
+  },
+
+  updateAgentMacAddresses: async (agentId: number, macAddress1: string | null, macAddress2: string | null): Promise<any> => {
+    const res = await fetch(`${BASE_URL}/next/agents/mac-addresses/${agentId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(false),
+      body: JSON.stringify({ 
+        mac_address_1: macAddress1, 
+        mac_address_2: macAddress2 
+      }),
+    });
+    if (!res.ok) throw new Error('خطا در به‌روزرسانی MAC Address');
+    return res.json();
+  },
+
+  // 📊 گزارش ساعات کاری ماهانه
+  getMonthlyWorkingHours: async (userId?: number, year?: number, month?: number): Promise<any> => {
+    const params = new URLSearchParams();
+    if (userId) params.append('user_id', userId.toString());
+    if (year) params.append('year', year.toString());
+    if (month) params.append('month', month.toString());
+    
+    const res = await fetch(`${BASE_URL}/next/hr/monthly-working-hours?${params.toString()}`, {
+      method: 'GET',
+      headers: getAuthHeaders(false),
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error('خطا در دریافت گزارش ساعات کاری');
+    return res.json();
+  },
 };

@@ -4,6 +4,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import LeadDrawer from '@/components/LeadDrawer';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
+
 
 type ViewModeType = 'leads' | 'clients';
 
@@ -48,8 +50,7 @@ export default function ClientsDashboardPage() {
 
   const [eventForm, setEventForm] = useState({ session_date_shamsi: '', next_call_date_shamsi: '', assigned_agent_id: '', session_type: 'online', form_type: '' });
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`;
+  const BACKEND_BASE_URL = API_BASE_URL;
 
   const statusesList = ['مشاوره 1', 'مشاوره عالی 1', 'پیگیری', 'ساسپند', 'مشاوره 2', 'بی پاسخ', 'هدف', 'نظر مدیر', 'لید فوری', 'مساعد نبود', 'ارزیابی پرونده', 'رها شده', 'مشاوره عالی 2', 'پیگیری 2', 'پیگیری 3', 'پیگیری 4', 'پیگیری 5', 'واتساپی', 'تلگرام'];
   const sourceOptions = ['اینستاگرام', 'پیشگامان', 'تهران ویزا', 'واتساپ', 'تلگرام', 'بله', 'معرفی', 'تماس ورودی', 'رزرو سایت', 'ورود دستی فرانت'];
@@ -83,7 +84,7 @@ export default function ClientsDashboardPage() {
     setLoading(true);
     const token = localStorage.getItem('token');
     // قفل دایمی اندپوینت روی واکشی کلاینت‌های رسمی
-    let url = `${BACKEND_BASE_URL}/api/next/dashboard/leads?page=${currentPage}&view_mode=clients&per_page=15&sort_by=${sortConfig.key}&sort_dir=${sortConfig.direction}`;
+    let url = `${BACKEND_BASE_URL}/next/dashboard/leads?page=${currentPage}&view_mode=clients&per_page=15&sort_by=${sortConfig.key}&sort_dir=${sortConfig.direction}`;
     
     Object.entries(colFilters).forEach(([k, v]) => { if (v) url += `&filter_${k}=${v}`; });
     if (showAdvancedPanel && advancedFilters.rules.length > 0 && advancedFilters.rules[0].value) {
@@ -118,7 +119,7 @@ export default function ClientsDashboardPage() {
 
     try {
       // ۱. 🎯 فیکس باگ قطعی CORS/Fetch: لود گزارش ناظر بر پایه روت بیرونی مجهز به پیشوند واقعی /api
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/supervisor/reports`, { headers: authHeaders });
+      const res = await fetch(`${BACKEND_BASE_URL}/next/supervisor/reports`, { headers: authHeaders });
       if (res.ok) {
         const json = await res.json();
         if (json.status === 'success') setSeniorConsultants(json.agent_performance || []);
@@ -156,8 +157,8 @@ export default function ClientsDashboardPage() {
 
     const payload = field === 'agent_id' ? { agent_id: value } : { field, value };
     const url = field === 'agent_id' 
-      ? `${BACKEND_BASE_URL}/api/next/leads/update/${leadId}` 
-      : `${BACKEND_BASE_URL}/api/next/leads/update-inline/${leadId}`;
+      ? `${BACKEND_BASE_URL}/next/leads/update/${leadId}` 
+      : `${BACKEND_BASE_URL}/next/leads/update-inline/${leadId}`;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -174,7 +175,7 @@ export default function ClientsDashboardPage() {
 
   const handleUpdatePersona = async (leadId: number, persona: string) => {
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/update-persona/${leadId}`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/leads/update-persona/${leadId}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ persona })
@@ -188,7 +189,7 @@ export default function ClientsDashboardPage() {
   const handleSaveSummary = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/store-summary/${summaryModalLeadId}`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/leads/store-summary/${summaryModalLeadId}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ summary: callSummaryText })
@@ -204,7 +205,7 @@ export default function ClientsDashboardPage() {
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    await fetch(`${BACKEND_BASE_URL}/api/next/leads/store-event/${eventModalLeadId}`, {
+    await fetch(`${BACKEND_BASE_URL}/next/leads/store-event/${eventModalLeadId}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(eventForm)
@@ -215,7 +216,7 @@ export default function ClientsDashboardPage() {
 
   const handleClickToDial = async (customerPhone: string, leadId: number) => {
     const token = localStorage.getItem('token');
-    await fetch(`${BACKEND_BASE_URL}/api/next/voip/click-to-dial`, {
+    await fetch(`${BACKEND_BASE_URL}/next/voip/click-to-dial`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ customer_phone: customerPhone, lead_id: leadId })

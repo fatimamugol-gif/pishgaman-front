@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
+
 
 export default function CallLogsDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -26,16 +28,18 @@ export default function CallLogsDashboard() {
     per_page: 15
   });
 
+  const BACKEND_BASE_URL = API_BASE_URL;
+  
   // 🎯 استخراج اتوماتیک آی‌پی یا دامنه لایو سیستم شما
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`;
+  //const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  //const BACKEND_BASE_URL = `http://${currentHost}:8000`;
 
   // 🔄 ۱. واکشی لایو نقشه هویتی کلاینت‌ها برای رفرش آنی اسامی
   const fetchLeadsMapping = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/dashboard/leads?per_page=200`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/dashboard/leads?per_page=200`, {
         method: 'GET',
         headers: { 
           'Authorization': `Bearer ${token}`, 
@@ -77,7 +81,7 @@ export default function CallLogsDashboard() {
         per_page: filters.per_page.toString()
       }).toString();
 
-      const response = await fetch(`${BACKEND_BASE_URL}/api/next/voip/logs?${queryParams}`, {
+      const response = await fetch(`${BACKEND_BASE_URL}/next/voip/logs?${queryParams}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -136,7 +140,7 @@ export default function CallLogsDashboard() {
     setIsSubmittingQuickLead(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/store`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/leads/store`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`, 
@@ -325,7 +329,7 @@ export default function CallLogsDashboard() {
                 <input 
                   type="text" 
                   autoFocus
-                  placeholder="مثال: محمدرضا شهبازی" 
+                  placeholder="مثال: افشین محمدی" 
                   className="p-2 bg-slate-50 dark:bg-slate-950 border dark:border-slate-800 rounded-xl text-xs w-full outline-none text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500/20" 
                   value={quickName}
                   onChange={e => setQuickName(e.target.value)}

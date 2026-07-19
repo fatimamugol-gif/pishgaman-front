@@ -4,12 +4,16 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import LeadDrawer from '@/components/LeadDrawer';
+import { getMessaging, getToken } from "firebase/messaging";
 import TicketsDashboard from '@/components/staff/TicketsDashboard';
 import TasksManager from '@/components/staff/TasksManager';
 import KnowledgeManager from '@/components/staff/KnowledgeManager';
 import AccountingManager from '@/components/staff/AccountingManager';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
+// 🎯 گام اول: ایمپورت اتمیک هاب مدیریت و پایش جلسات تخصصی
+import SessionsArchive from '@/components/staff/SessionsArchive';
 
-type StaffTabType = 'analytics' | 'tickets' | 'tasks' | 'knowledge' | 'accounting';
+type StaffTabType = 'analytics' | 'tickets' | 'tasks' | 'knowledge' | 'accounting' | 'session';
 type QuickRangeType = 'today' | 'yesterday' | 'last_7_days' | 'last_30_days' | 'custom';
 
 export default function AgentDashboardMainPage() {
@@ -29,14 +33,13 @@ export default function AgentDashboardMainPage() {
   const [endDate, setEndDate] = useState(todayStr);
   const [quickRange, setQuickRange] = useState<QuickRangeType>('today');
 
-  // 🎯 فیکس شد: انتقال استیت سورت به بالاترین سطح کامپوننت (قبل از دستورهای شرطی return) جهت مهار ارور ری‌آکت
   const [extSortConfig, setExtSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({
     key: 'total_minutes',
     direction: 'desc' 
   });
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
+  // const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  const BACKEND_BASE_URL = API_BASE_URL; 
 
   const fetchHubData = async () => {
     const token = localStorage.getItem('token');
@@ -44,7 +47,7 @@ export default function AgentDashboardMainPage() {
     if (storedName) setUserName(storedName);
     
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/agent/dashboard-hub?start_date=${startDate}&end_date=${endDate}`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/agent/dashboard-hub?start_date=${startDate}&end_date=${endDate}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
       const data = await res.json();
@@ -63,7 +66,7 @@ export default function AgentDashboardMainPage() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/dashboard/live-popup`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/dashboard/live-popup`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
       if (res.ok) {
@@ -75,7 +78,7 @@ export default function AgentDashboardMainPage() {
         }
       }
     } catch (e) {
-      console.error("خطا در واکشی پاپ‌آپ مخابرات", e);
+      console.warn("📡 [VoIP Radar Offline]: سرور بک‌آند لاراول موقتاً در دسترس نیست.");
     }
   };
 
@@ -88,7 +91,6 @@ export default function AgentDashboardMainPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🎯 توابع موتور محاسباتی سورت داینامیک در سمت فرانت
   const getSortedExtensions = () => {
     const performanceData = hubData?.extensions_performance ? [...hubData.extensions_performance] : [];
     if (!extSortConfig) return performanceData;
@@ -224,7 +226,7 @@ export default function AgentDashboardMainPage() {
               <option value="today">امروز</option>
               <option value="yesterday">دیروز</option>
               <option value="last_7_days">هفته گذشته (۷ روز)</option>
-              <option value="last_30_days">ماه گذشته (۳۰ روز)</option>
+              <option value="last_30_days">ماه گذشته (۳0 روز)</option>
               <option value="custom">بازه سفارشی (دستی)</option>
             </select>
 
@@ -236,12 +238,24 @@ export default function AgentDashboardMainPage() {
           </div>
         </div>
 
+        {/* 🎯 نوار تب‌های دشبورد پیشگامان به همراه هاب جلسات مشاور عالی */}
         <div className="flex flex-wrap gap-1.5 bg-white/5 p-1.5 rounded-xl border border-white/10">
           <button onClick={() => setActiveTab('analytics')} className={`px-3 py-1.5 rounded-lg font-black text-[10px] transition-all cursor-pointer ${activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:bg-white/5'}`}>📊 آمار و پایش زنده</button>
           <button onClick={() => setActiveTab('tickets')} className={`px-3 py-1.5 rounded-lg font-black text-[10px] transition-all cursor-pointer ${activeTab === 'tickets' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:bg-white/5'}`}>🎫 تیکت‌های متقاضیان</button>
           <button onClick={() => setActiveTab('tasks')} className={`px-3 py-1.5 rounded-lg font-black text-[10px] transition-all cursor-pointer ${activeTab === 'tasks' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:bg-white/5'}`}>📋 صدور وظیفه کلاینت</button>
           <button onClick={() => setActiveTab('knowledge')} className={`px-3 py-1.5 rounded-lg font-black text-[10px] transition-all cursor-pointer ${activeTab === 'knowledge' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:bg-white/5'}`}>📚 مدیریت پایگاه دانش</button>
           <button onClick={() => setActiveTab('accounting')} className={`px-3 py-1.5 rounded-lg font-black text-[10px] transition-all cursor-pointer ${activeTab === 'accounting' ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-300 hover:bg-white/5'}`}>💳 هاب حسابداری و اقساط</button>
+          
+          {/* 👑 پچ متمرکز نئونی: افزودن دکمه تب لایو مدیریت جلسات تخصصی */}
+          <button 
+            onClick={() => setActiveTab('session')} 
+            className={`px-3 py-1.5 rounded-lg font-black text-[10px] transition-all cursor-pointer flex items-center gap-1 ${
+              activeTab === 'session' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-amber-400 hover:bg-white/5'
+            }`}
+          >
+            <span>🗂️ هاب مانیتورینگ جلسات تخصصی</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+          </button>
         </div>
       </div>
 
@@ -284,32 +298,92 @@ export default function AgentDashboardMainPage() {
       {activeTab === 'analytics' && (
         <div className="space-y-8 animate-fadeIn">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-white space-y-4 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-center border-b pb-3 mb-2">
-                  <h2 className="font-black text-xs text-slate-800">☎️ پیگیری‌های فوری معلق امروز</h2>
-                  <span className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-lg text-[9px] font-bold">اتوماسیون زنده</span>
+          
+            {/* باکس ارتقا یافته پیگیری‌های فوری و وظایف روزانه کارشناس */}
+<div className="bg-white p-6 rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100 space-y-4 flex flex-col justify-between">
+  <div>
+    <div className="flex justify-between items-center border-b pb-3 mb-2">
+      <h2 className="font-black text-xs text-slate-800 flex items-center gap-1.5">
+        <span>📋 لیست وظایف و پیگیری‌های فوری امروز شما</span>
+      </h2>
+      <span className="bg-rose-50 text-rose-600 px-2 py-0.5 rounded-lg text-[9px] font-bold animate-pulse">
+        اتوماسیون زنده
+      </span>
+    </div>
+
+    {/* لیست اسکرول‌دار اقدامات */}
+    <div className="space-y-3 max-h-[190px] overflow-y-auto pr-1">
+      {hubData?.recent_reminders?.length === 0 ? (
+        <div className="text-center py-10 text-slate-400 text-[10px] space-y-2">
+          <div>✨ خدا قوت رفیق! هیچ وظیفه یا پیگیری عقب‌افتاده‌ای برای امروز نداری.</div>
+          <div className="text-[9px] opacity-70">همه پرونده‌ها به‌روز هستند.</div>
+        </div>
+      ) : (
+        hubData?.recent_reminders?.map((rem: any) => {
+          // تعیین رنگ وضعیت بر اساس اولویت یا نوع تسک (پچ بصری پیشگامان)
+          const isUrgent = rem.priority === 'high' || rem.title?.includes('فوری');
+          
+          return (
+            <div 
+              key={rem.id} 
+              className={`flex items-center justify-between p-3 rounded-xl border transition-all hover:shadow-xs ${
+                isUrgent 
+                  ? 'bg-rose-50/40 border-rose-100 hover:bg-rose-50' 
+                  : 'bg-slate-50 border-slate-100 hover:bg-slate-100/70'
+              }`}
+            >
+              <div className="space-y-1 max-w-[70%]">
+                <div className="font-black text-xs text-slate-800 flex items-center gap-1.5">
+                  {isUrgent && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>}
+                  {rem.title}
                 </div>
-                <div className="space-y-3 max-h-[180px] overflow-y-auto">
-                  {hubData?.recent_reminders?.length === 0 ? (
-                    <div className="text-center py-8 text-slate-400 text-[10px]">هیچ آلارم تماس عقب‌افتاده‌ای نداری رفیق. ✨</div>
-                  ) : (
-                    hubData?.recent_reminders?.map((rem: any) => (
-                      <div key={rem.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl hover:bg-slate-100/60 transition-all">
-                        <div>
-                          <div className="font-black text-xs text-slate-800">{rem.title}</div>
-                          <div className="text-[9px] text-slate-400 font-medium mt-0.5">{rem.description || 'بدون توضیحات'}</div>
-                        </div>
-                        <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-mono font-bold text-[10px]">{rem.reminder_time || '09:00'}</span>
-                      </div>
-                    ))
-                  )}
+                <div className="text-[9px] text-slate-500 font-medium leading-relaxed truncate">
+                  {rem.description || 'بدون توضیحات تکمیلی'}
                 </div>
+                {rem.lead_name && (
+                  <div className="text-[9px] text-indigo-600 font-bold">
+                    👤 متقاضی: {rem.lead_name}
+                  </div>
+                )}
               </div>
-              <div className="text-slate-400 text-[10px] pt-2 border-t font-medium">
-                جمع کل اقدامات: <span className="font-mono font-bold text-rose-600">{metrics.today_reminders_count} اعلان</span>
+              
+              <div className="flex flex-col items-end gap-1.5">
+                {/* نمایش ساعت اقدام */}
+                <span className="bg-slate-900 text-slate-100 px-2 py-0.5 rounded-md font-mono font-bold text-[9px]">
+                  {rem.reminder_time || '09:00'}
+                </span>
+                
+                {/* دکمه عملیاتی هوشمند برای باز کردن سریع پرونده متقاضی مرتبط */}
+                {rem.lead_id && (
+                  <button
+                    onClick={() => {
+                      setActiveLeadForDrawer({ 
+                        id: rem.lead_id, 
+                        name: rem.lead_name || 'متقاضی سیستم', 
+                        phone: rem.lead_phone 
+                      });
+                      setIsDrawerOpen(true);
+                    }}
+                    className="bg-indigo-600 text-white hover:bg-indigo-700 font-bold px-2 py-0.5 rounded-md text-[8px] transition-colors cursor-pointer"
+                  >
+                    ⚡ بررسی پرونده
+                  </button>
+                )}
               </div>
             </div>
+          );
+        })
+      )}
+    </div>
+  </div>
+
+  <div className="text-slate-500 text-[10px] pt-2 border-t flex justify-between items-center font-medium">
+    <div>جمع کل اقدامات امروز کارشناس:</div>
+    <span className="font-mono font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md text-xs">
+      {metrics.today_reminders_count || hubData?.recent_reminders?.length || 0} تکلیف
+    </span>
+  </div>
+</div>
 
             <div className="bg-white p-6 rounded-[24px] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-white flex flex-col justify-between">
               <h2 className="font-black text-xs text-slate-800">
@@ -477,13 +551,16 @@ export default function AgentDashboardMainPage() {
       {activeTab === 'tasks' && <TasksManager />}
       {activeTab === 'knowledge' && <KnowledgeManager />}
       {activeTab === 'accounting' && <AccountingManager />}
+      
+      {/* 👑 پچ متمرکز نئونی: رندر شرطی لایو کورتکس آرشیو جلسات */}
+      {activeTab === 'session' && <SessionsArchive />}
 
       {isDrawerOpen && activeDrawerLead && (
         <LeadDrawer 
           lead={activeDrawerLead} 
           onClose={() => { setIsDrawerOpen(false); fetchHubData(); }} 
           onUpdate={async (updated) => {
-            await fetch(`${BACKEND_BASE_URL}/api/next/leads/update/${updated.id}`, {
+            await fetch(`${BACKEND_BASE_URL}/next/leads/update/${updated.id}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
               body: JSON.stringify(updated)

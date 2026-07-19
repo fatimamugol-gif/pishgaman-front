@@ -3,34 +3,23 @@
 'use client';
 
 
-
 import React, { useEffect, useState } from 'react';
-
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 
 export default function LiveNotificationAlert() {
 
   const [activeAlert, setActiveAlert] = useState<any>(null);
 
-
-
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; // خودکار آی‌پی سیستم شما را پورت ۸۰۰۰ جفت می‌کند
-
+  const BACKEND_BASE_URL = API_BASE_URL;
 
 
   const checkReminders = async () => {
     try {
-      const token = localStorage.getItem('token');
-
       const res = await fetch(
         `${BACKEND_BASE_URL}/next/reminders/check-now`, // 🎯 فیکس باگ: حذف پیشوند اشتباه /api
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json'
-          }
+          headers: getAuthHeaders(false)
         }
       );
 
@@ -86,14 +75,9 @@ export default function LiveNotificationAlert() {
 {/* 🦾 دکمه‌های اکشن وضعیت متصل به کنترلر لاراول مجهز به گارد توکن */}
       <div className="grid grid-cols-2 gap-2 mt-4">
         <button onClick={async () => {
-          const token = localStorage.getItem('token'); // 🎯 دریافت توکن برای دکمه
           const res = await fetch(`${BACKEND_BASE_URL}/next/reminders/status/${activeAlert.id}`, { // 🎯 اصلاح روت بدون api
             method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`, // 🎯 پلمب توکن سانکتوم
-              'Accept': 'application/json'
-            },
+            headers: getAuthHeaders(false),
             body: JSON.stringify({ status: 'success' })
           });
           if (res.ok) {
@@ -104,14 +88,9 @@ export default function LiveNotificationAlert() {
         </button>
 
         <button onClick={async () => {
-          const token = localStorage.getItem('token'); // 🎯 دریافت توکن برای دکمه
           const res = await fetch(`${BACKEND_BASE_URL}/next/reminders/status/${activeAlert.id}`, { // 🎯 اصلاح روت بدون api
             method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`, // 🎯 پلمب توکن سانکتوم
-              'Accept': 'application/json'
-            },
+            headers: getAuthHeaders(false),
             body: JSON.stringify({ status: 'failed' })
           });
           if (res.ok) {

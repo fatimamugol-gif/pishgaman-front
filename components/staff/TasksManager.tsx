@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { staffService } from '@/services/staffService';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 interface ClientOption { id: number; name: string; phone: string; }
 
@@ -56,13 +57,11 @@ export default function TasksManager() {
     } catch (err) { console.error(err); }
   };
 
-  // واکشی لیست اسناد مرکزی
+// واکشی لیست اسناد مرکزی
   const loadGlobalDocs = async () => {
     try {
-      const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://${currentHost}:8000/api/staff/global-docs`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API_BASE_URL}/staff/global-docs`, {
+        headers: getAuthHeaders(false)
       });
       if (res.ok) {
         const json = await res.json();
@@ -80,20 +79,14 @@ export default function TasksManager() {
 
     try {
       setUploadingDoc(true);
-      const token = localStorage.getItem('token');
-      const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-
       const formData = new FormData();
       formData.append('title', newDocTitle.trim());
       // 🎯 ارسال فایل خالص مطمئن
       formData.append('file', newDocFile);
 
-      const res = await fetch(`http://${currentHost}:8000/api/staff/global-docs/upload`, {
+      const res = await fetch(`${API_BASE_URL}/staff/global-docs/upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json' // 👈 حتماً بگو اکسبت لاراول جیسون باشد تا جزئیات خطا لو برود
-        },
+        headers: getAuthHeaders(true),
         body: formData
       });
 
@@ -122,17 +115,10 @@ export default function TasksManager() {
     if (!targetClientId) return alert('لطفاً ابتدا کلاینت مورد نظر را انتخاب کنید رفیق.');
     
     try {
-      const token = localStorage.getItem('token');
-      const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-      
       // 🎯 فیکس نهایی: ارسال دیتای کلاینت و سند به صورت JSON به بک‌آند
-      const res = await fetch(`http://${currentHost}:8000/api/staff/global-docs/assign`, {
+      const res = await fetch(`${API_BASE_URL}/staff/global-docs/assign`, {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: getAuthHeaders(false),
         body: JSON.stringify({ 
           global_doc_id: docId, 
           lead_id: parseInt(targetClientId) 

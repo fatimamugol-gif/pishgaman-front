@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 interface Client {
   id: number;
@@ -37,7 +38,7 @@ export default function AccountingManager() {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedInvoiceForReject, setSelectedInvoiceForReject] = useState<number | null>(null);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  const BACKEND_BASE_URL = API_BASE_URL;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
@@ -48,14 +49,14 @@ export default function AccountingManager() {
     try {
       setLoading(true);
       // ۱. لود کلاینت‌ها/لیدها برای منوی آبشاری (با اندپوینت فعلی پروژه‌ت ست کن)
-      const resLeads = await fetch(`http://${currentHost}:8000/api/staff/leads`, {
+      const resLeads = await fetch(`${BACKEND_BASE_URL}/staff/leads`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataLeads = await resLeads.json();
       if (resLeads.ok) setClients(dataLeads.data || dataLeads);
 
       // ۲. لود لیست تمام فاکتورها جهت پایش حسابرس
-      const resInvoices = await fetch(`http://${currentHost}:8000/api/staff/accounting/invoices`, {
+      const resInvoices = await fetch(`${BACKEND_BASE_URL}/staff/accounting/invoices`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataInvoices = await resInvoices.json();
@@ -84,7 +85,7 @@ export default function AccountingManager() {
     const baseTimestamp = Math.floor(Date.now() / 1000); 
 
     try {
-      const res = await fetch(`http://${currentHost}:8000/api/staff/accounting/generate`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/staff/accounting/generate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -124,7 +125,7 @@ export default function AccountingManager() {
     }
 
     try {
-      const res = await fetch(`http://${currentHost}:8000/api/staff/accounting/review/${id}`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/staff/accounting/review/${id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -244,7 +245,7 @@ export default function AccountingManager() {
                     <td className="p-2 flex gap-1.5 items-center">
                       {inv.status === 'pending_review' && (
                         <>
-                          <a href={`http://${currentHost}:8000/storage/${inv.file_path}`} target="_blank" rel="noreferrer" className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded-lg">🔍 مشاهده فیش</a>
+                          <a href={`http://${BACKEND_BASE_URL}/storage/${inv.file_path}`} target="_blank" rel="noreferrer" className="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-1 rounded-lg">🔍 مشاهده فیش</a>
                           <button onClick={() => handleReviewReceipt(inv.id, 'approve')} className="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded-lg">✓ تایید</button>
                           <button onClick={() => setSelectedInvoiceForReject(inv.id)} className="bg-rose-600 hover:bg-rose-500 text-white px-2 py-1 rounded-lg">❌ رد فیش</button>
                         </>

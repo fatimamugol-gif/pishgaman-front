@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function ActiveCallsPage() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; // خودکار آی‌پی سیستم شما را پورت ۸۰۰۰ جفت می‌کند
+  // const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  // const BACKEND_BASE_URL = `http://${currentHost}:8000`; // خودکار آی‌پی سیستم شما را پورت ۸۰۰۰ جفت می‌کند
 
+  const BACKEND_BASE_URL = API_BASE_URL;
   const fetchLiveCalls = () => {
-    fetch(`${BACKEND_BASE_URL}:8000/api/next/dashboard/active-calls`)
+    fetch(`${BACKEND_BASE_URL}/next/dashboard/active-calls`)
       .then(res => res.json())
       .then(resData => {
         setCalls(resData.data || []);

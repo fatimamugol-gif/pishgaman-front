@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function LeadsPage() {
   const [livePopup, setLivePopup] = useState<any>(null);
@@ -9,10 +10,9 @@ export default function LeadsPage() {
   const myExtension = "102"; 
 
   useEffect(() => {
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; // خودکار آی‌پی سیستم شما را پورت ۸۰۰۰ جفت می‌کند
+    const BACKEND_BASE_URL = API_BASE_URL;
     const interval = setInterval(() => {
-      fetch(`${BACKEND_BASE_URL}:8000/api/next/dashboard/live-popup?extension=${myExtension}`)
+      fetch(`${BACKEND_BASE_URL}/next/dashboard/live-popup?extension=${myExtension}`)
         .then(res => res.json())
         .then(resData => {
           if (resData.has_call) {

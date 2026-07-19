@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function SupervisorReportsPage() {
   const [reportData, setReportData] = useState<any>(null);
@@ -11,13 +12,12 @@ export default function SupervisorReportsPage() {
     setLoading(true);
     
     // 🎯 قفل پویا روی آی‌پی شبکه داخلی مهندس کیسکا جهت دسترسی بدون لکنت تمام دپارتمان‌ها
-    const currentHost = typeof window !== 'undefined' ? window.location.hostname : '192.168.1.245';
-    const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
+     const BACKEND_BASE_URL = API_BASE_URL;
     const token = localStorage.getItem('token');
     
     try {
       // ریکوئست دقیق به روت کنترلر شما همراه با پذیرش فرمت JSON خالص
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/supervisor/reports`, { 
+      const res = await fetch(`${BACKEND_BASE_URL}/next/supervisor/reports`, { 
         headers: { 
           'Authorization': `Bearer ${token}`, 
           'Accept': 'application/json' 

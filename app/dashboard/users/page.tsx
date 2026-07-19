@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function UsersAndDepartmentsManagement() {
   const [panelTab, setPanelTab] = useState<'users' | 'departments'>('users');
@@ -15,8 +16,7 @@ export default function UsersAndDepartmentsManagement() {
   
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'agent', department_id: '', voip_extension: '' });
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
+  const BACKEND_BASE_URL = API_BASE_URL;
 
   const [editingDept, setEditingDept] = useState<any>(null);
 
@@ -26,11 +26,11 @@ export default function UsersAndDepartmentsManagement() {
     const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
 
     try {
-      const uRes = await fetch(`${BACKEND_BASE_URL}/api/next/users`, { headers });
+      const uRes = await fetch(`${BACKEND_BASE_URL}/next/users`, { headers });
       const uData = await uRes.json();
       if (uData.status === 'success') setUsers(uData.data || []);
 
-      const dRes = await fetch(`${BACKEND_BASE_URL}/api/next/departments`, { headers });
+      const dRes = await fetch(`${BACKEND_BASE_URL}/next/departments`, { headers });
       const dData = await dRes.json();
       if (dData.status === 'success') setDepartments(dData.data || []);
     } catch (err) {
@@ -45,7 +45,7 @@ export default function UsersAndDepartmentsManagement() {
   const handleSaveDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/departments/store`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/departments/store`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify(editingDept)
@@ -60,7 +60,7 @@ export default function UsersAndDepartmentsManagement() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/users/store`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/users/store`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify(newUser)
@@ -75,7 +75,7 @@ export default function UsersAndDepartmentsManagement() {
 
   const handleUserUpdate = async () => {
     const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/users/update/${editingUser.id}`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/next/users/update/${editingUser.id}`, {
       method: 'POST', 
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({

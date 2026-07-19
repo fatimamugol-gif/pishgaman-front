@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ConsultationSessionForm from './staff/ConsultationSessionForm';
 
 interface LeadModalProps {
   isOpen: boolean;
@@ -7,13 +8,34 @@ interface LeadModalProps {
 }
 
 export default function LeadDetailModal({ isOpen, onClose, lead }: LeadModalProps) {
+  const [showConsultationForm, setShowConsultationForm] = useState(false);
+
+  const handleConsultationSuccess = () => {
+    setShowConsultationForm(false);
+    // Optionally refresh lead data or show success message
+  };
+
   if (!isOpen || !lead) return null;
+
+  if (showConsultationForm) {
+    return (
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50" dir="rtl">
+        <div className="bg-white w-full max-w-4xl rounded-[24px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+          <ConsultationSessionForm 
+            leadId={lead.id} 
+            onSuccess={handleConsultationSuccess}
+            onCancel={() => setShowConsultationForm(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50" dir="rtl">
       <div className="bg-white w-full max-w-2xl rounded-[24px] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center border-b pb-3 mb-4">
-          <h2 className="text-xl font-bold text-slate-800">پروفایل ۳۶۰ درجه: {lead.name}</h2>
+          <h2 className="text-xl font-bold text-slate-800">پروفایل: {lead.name}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg">×</button>
         </div>
 
@@ -50,12 +72,22 @@ export default function LeadDetailModal({ isOpen, onClose, lead }: LeadModalProp
 
         {/* بخش چهارم: آنالیز هوش مصنوعی */}
         <div className="mb-4">
-          <h3 className="text-sm font-bold text-purple-600 mb-3 bg-purple-50 px-3 py-1 rounded-lg inline-block">🧠 تحلیل هوشمند AI</h3>
+          <h3 className="text-sm font-bold text-purple-600 mb-3 bg-purple-50 px-3 py-1 rounded-lg inline-block">🧠 تحلیل هوشمند </h3>
           <div className="p-4 border border-purple-100 bg-purple-50/30 rounded-xl space-y-2">
             <p className="text-sm"><strong className="text-slate-600">کشور مقصد پیشنهادی:</strong> {lead.ai_insights.destination}</p>
             <p className="text-sm"><strong className="text-slate-600">نوع ویزای استخراج شده:</strong> {lead.ai_insights.intent}</p>
             <p className="text-xs text-slate-500 leading-relaxed"><strong className="text-slate-600 block mb-1">خلاصه پرونده:</strong> {lead.ai_insights.summary}</p>
           </div>
+        </div>
+
+        {/* دکمه ثبت جلسه مشاوره */}
+        <div className="pt-4 border-t">
+          <button 
+            onClick={() => setShowConsultationForm(true)}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-bold text-xs shadow-sm transition-all"
+          >
+            📋 ثبت جلسه مشاوره اولیه
+          </button>
         </div>
       </div>
     </div>

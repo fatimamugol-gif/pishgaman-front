@@ -3,21 +3,27 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import MainSidebar from '@/components/MainSidebar';
+import StaffChat from '@/components/staff/StaffChat';
 import { useTheme } from '../../context/ThemeContext';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
+  const BACKEND_BASE_URL = API_BASE_URL;
 
 if (typeof window !== 'undefined' && !((window as any).Echo)) {
+  const reverbHost = process.env.NEXT_PUBLIC_REVERB_HOST || '127.0.0.1';
+  const reverbPort = parseInt(process.env.NEXT_PUBLIC_REVERB_PORT || '8080');
+  const isHttps = process.env.NEXT_PUBLIC_REVERB_SCHEME === 'https';
+
   (window as any).Pusher = Pusher;
   (window as any).Echo = new Echo({
     broadcaster: 'reverb',
     key: 'wyBCijEJNkmFP5eoSDfSg6+bz0glNb8MnHwLLM6Mchk=',
-    wsHost: '127.0.0.1',
-    wsPort: 8080,
-    forceTLS: false,
+    wsHost: reverbHost,
+    wsPort: reverbPort,
+    wssPort: reverbPort,
+    forceTLS: isHttps,
     disableStats: true,
     enabledTransports: ['ws', 'wss'],
   });
@@ -58,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const token = localStorage.getItem('token');
       if (!token) return;
       try {
-        const hubRes = await fetch(`${BACKEND_BASE_URL}/api/next/agent/dashboard-hub`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const hubRes = await fetch(`${BACKEND_BASE_URL}/next/agent/dashboard-hub`, { headers: { 'Authorization': `Bearer ${token}` } });
         const hubJson = await hubRes.json();
         if (hubJson.status === 'success') {
           setCurrentUserId(hubJson.user_id);
@@ -66,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setUserDepartmentId(hubJson.department_id); // دریافت شناسه دپارتمان کارشناس
         }
 
-        const uRes = await fetch(`${BACKEND_BASE_URL}/api/next/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const uRes = await fetch(`${BACKEND_BASE_URL}/next/users`, { headers: { 'Authorization': `Bearer ${token}` } });
         const uData = await uRes.json();
         if (uData.status === 'success') setUsersList(uData.data || []);
       } catch (e) { console.error(e); }
@@ -75,14 +81,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     loadUsersAndSelf();
   }, []);
 
-  // 📡 رادار پولینگ تصحیح شده بر پایه دپارتمان و رول ادمین
+ // app/dashboard/layout.tsx
   const checkLiveCallRadarFallback = async () => {
     const token = localStorage.getItem('token');
     if (!token || openPopup || isFetchingRadar.current) return; 
     
     try {
       isFetchingRadar.current = true;
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/dashboard/live-popup`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/dashboard/live-popup`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
       if (res.ok) {
@@ -92,12 +98,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const localRole = localStorage.getItem('user_role') || 'agent';
           const isUserAdmin = localRole === 'supervisor' || localRole === 'admin';
 
-          // 🛡️ گارد اول: اگر تماس خروجی است، فقط برای خود کارشناس همان داخلی لود شود
           if (call.call_type === 'outbound') {
             if (currentUserExt && call.agent_extension !== currentUserExt) return;
           }
 
-          // 🛡️ گارد دوم: اگر تماس ورودی است و کاربر ادمین نیست، دپارتمان‌ها باید یکی باشند
           if (call.call_type === 'inbound' && !isUserAdmin) {
             if (userDepartmentId && call.department_id && call.department_id !== userDepartmentId) {
               return; 
@@ -110,7 +114,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       }
     } catch (e) { 
-      console.error(e); 
+      // 👑 خنثی‌سازی کرش پاپ‌آپ سراسری در زمان عدم پاسخ وب‌سرور لاراول
+      // کنسول با این پچ دیگر قفل و فریز نمی‌شود
     } finally {
       isFetchingRadar.current = false;
     }
@@ -183,7 +188,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setSearchTerm(term);
     if (term.length < 2) return;
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/dashboard/leads?sort_by=id&sort_dir=desc`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/dashboard/leads?sort_by=id&sort_dir=desc`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await res.json();
@@ -268,7 +273,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1">
                 {searchResults.map((l: any) => (
                   <button key={l.id} type="button" onClick={async () => {
-                    const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/link-secondary-phone`, {
+                    const res = await fetch(`${BACKEND_BASE_URL}/next/leads/link-secondary-phone`, {
                       method: 'POST',
                       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
                       body: JSON.stringify({ lead_id: l.id, new_phone: displayPhone })
@@ -305,7 +310,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <button type="button" onClick={async () => {
                 if(!newLeadData.name) return alert('نام متقاضی الزامی است.');
-                const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/store`, {
+                const res = await fetch(`${BACKEND_BASE_URL}/next/leads/store`, {
                   method: 'POST',
                   headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
                   body: JSON.stringify({ ...newLeadData, phone: displayPhone })
@@ -318,6 +323,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </div>
       )}
+
+      {/* 💬 چت آنلاین کارشناسان */}
+      <StaffChat />
     </div>
   );
 }

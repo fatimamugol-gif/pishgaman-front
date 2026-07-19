@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function NewLeadForm() {
   const [departments, setDepartments] = useState<any[]>([]);
@@ -26,9 +27,9 @@ export default function NewLeadForm() {
     spouse_age: '', spouse_language_level: 'بدون مدرک', spouse_accompanying: 'yes',
     field_of_study: '', gpa: '', department_id: '', assigned_agent_id: ''
   });
-
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
+  const BACKEND_BASE_URL = API_BASE_URL;
+  // const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  // const BACKEND_BASE_URL = `http://${currentHost}:8000`; 
 
   const statusesList = ['مشاوره 1', 'مشاوره عالی 1', 'پیگیری', 'ساسپند', 'مشاوره 2', 'بی پاسخ', 'هدف', 'نظر مدیر', 'لید فوری', 'مساعد نبود', 'ارزیابی پرونده', 'رها شده', 'مشاوره عالی 2', 'پیگیری 2', 'پیگیری 3', 'پیگیری 4', 'پیگیری 5', 'واتساپی', 'تلگرام'];
   const sourceOptions = ['اینستاگرام', 'پیشگامان', 'تهران ویزا', 'واتساپ', 'تلگرام', 'بله', 'معرفی', 'تماس ورودی', 'رزرو سایت', 'ورود دستی فرانت'];
@@ -38,11 +39,11 @@ export default function NewLeadForm() {
     const token = localStorage.getItem('token');
     const authHeaders = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
 
-    fetch(`${BACKEND_BASE_URL}/api/next/departments`, { headers: authHeaders })
+    fetch(`${BACKEND_BASE_URL}/next/departments`, { headers: authHeaders })
       .then(res => res.json())
       .then(data => { if(data.status === 'success') setDepartments(data.data || []); });
 
-    fetch(`${BACKEND_BASE_URL}/api/next/users`, { headers: authHeaders })
+    fetch(`${BACKEND_BASE_URL}/next/users`, { headers: authHeaders })
       .then(res => res.json())
       .then(data => { if(data.status === 'success') setAgents(data.data || []); });
   }, []);
@@ -65,7 +66,7 @@ export default function NewLeadForm() {
     const finalPayload = { ...formData, financial_capability_toman: capToman };
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/store`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/leads/store`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(finalPayload)

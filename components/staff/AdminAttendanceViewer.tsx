@@ -2,8 +2,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
-export default function AdminAttendanceViewer({ usersList, BACKEND_BASE_URL, formatTimestampToPersian, formatDurationText }: any) {
+const BACKEND_BASE_URL = API_BASE_URL;
+export default function AdminAttendanceViewer({ usersList, BACKEND_BASE_UR, formatTimestampToPersian, formatDurationText }: any) {
   const [filteredLogs, setFilteredLogs] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [filterDate, setFilterDate] = useState('');
@@ -16,7 +18,7 @@ export default function AdminAttendanceViewer({ usersList, BACKEND_BASE_URL, for
 
   const fetchFilteredLogs = async () => {
     const token = localStorage.getItem('token');
-    let url = `${BACKEND_BASE_URL}/api/next/hr/admin/all-attendance?`;
+    let url = `${BACKEND_BASE_URL}/next/hr/admin/all-attendance?`;
     if (selectedUser) url += `user_id=${selectedUser}&`;
     
     if (filterDate) {
@@ -50,7 +52,7 @@ export default function AdminAttendanceViewer({ usersList, BACKEND_BASE_URL, for
     const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/hr/admin/update-attendance`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/hr/admin/update-attendance`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({

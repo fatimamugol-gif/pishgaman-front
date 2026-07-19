@@ -7,6 +7,7 @@ import ChatTab from './drawer/ChatTab';
 import RemindersTab from './drawer/RemindersTab';
 import TasksTab from './drawer/TasksTab';
 import CallsTab from './drawer/CallsTab';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 // 👑 اصلاح قطعی: تراز کردن اینترفیس پروپس با متدهای کارتابل جهت پاس کردن گارد کامپایلر
 interface LeadDrawerProps {
   lead: any;
@@ -36,25 +37,23 @@ export default function LeadDrawer({ lead, onClose, onUpdate }: LeadDrawerProps)
   const [departments, setDepartments] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`;
+  const BACKEND_BASE_URL = API_BASE_URL;
 
   const personasList = ['Goal Oriented', 'Analytical', 'Safety Oriented', 'Explorer', 'Skeptic', 'Budget-Conscious', 'Family-First', 'Fast-Track', 'Undecided/Passive', 'Opportunity-Driven', 'Case Study Seeker'];
   const sourceOptions = ['اینستاگرام', 'پیشگامان', 'تهران ویزا', 'واتساپ', 'تلگرام', 'بله', 'معرفی', 'تماس ورودی', 'رزرو سایت', 'ورود دستی فرانت'];
 
   const fetchLeadSubData = async (leadId: number) => {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    const authHeaders = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+    const authHeaders = getAuthHeaders(false);
 
     try {
       const [remRes, taskRes, detailRes, callRes, deptRes, userRes] = await Promise.all([
-        fetch(`${BACKEND_BASE_URL}/api/next/leads/${leadId}/reminders`, { headers: authHeaders }),
-        fetch(`${BACKEND_BASE_URL}/api/next/leads/${leadId}/tasks`, { headers: authHeaders }),
-        fetch(`${BACKEND_BASE_URL}/api/next/leads/detail/${leadId}`, { headers: authHeaders }),
-        fetch(`${BACKEND_BASE_URL}/api/next/leads/${leadId}/call-logs`, { headers: authHeaders }),
-        fetch(`${BACKEND_BASE_URL}/api/next/departments`, { headers: authHeaders }),
-        fetch(`${BACKEND_BASE_URL}/api/next/users`, { headers: authHeaders })
+        fetch(`${BACKEND_BASE_URL}/next/leads/${leadId}/reminders`, { headers: authHeaders }),
+        fetch(`${BACKEND_BASE_URL}/next/leads/${leadId}/tasks`, { headers: authHeaders }),
+        fetch(`${BACKEND_BASE_URL}/next/leads/detail/${leadId}`, { headers: authHeaders }),
+        fetch(`${BACKEND_BASE_URL}/next/leads/${leadId}/call-logs`, { headers: authHeaders }),
+        fetch(`${BACKEND_BASE_URL}/next/departments`, { headers: authHeaders }),
+        fetch(`${BACKEND_BASE_URL}/next/users`, { headers: authHeaders })
       ]);
 
       if (remRes.ok) { const r = await remRes.json(); if (r.status === 'success') setLeadReminders(r.data || []); }
@@ -73,18 +72,13 @@ export default function LeadDrawer({ lead, onClose, onUpdate }: LeadDrawerProps)
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
-  // 🎯 مگا-پچ فرانت‌آند: ارسال مستقیم و فیزیکی اطلاعات ادیتور به روت معتبر بک‌آند
+  // 🎯 مگا-پچ فرانت‌آند: ارسال مستقیم و فیزیکی اطلاعات ادیتور به روت معتبر بک‌اند
   const handlePersistLeadUpdate = async (updatedFields: any) => {
-    const token = localStorage.getItem('token');
     try {
-      // شلیک مستقیم به روت POST چفت شده در بک‌آند لاراول شما
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/update/${updatedFields.id}`, {
+      // شلیک مستقیم به روت POST چفت شده در بک‌اند لاراول شما
+      const res = await fetch(`${BACKEND_BASE_URL}/next/leads/update/${updatedFields.id}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: getAuthHeaders(false),
         body: JSON.stringify(updatedFields)
       });
 
@@ -106,9 +100,8 @@ export default function LeadDrawer({ lead, onClose, onUpdate }: LeadDrawerProps)
 
   const refreshCallLogs = async () => {
     setCallsLoading(true);
-    const token = localStorage.getItem('token');
     try {
-      const callRes = await fetch(`${BACKEND_BASE_URL}/api/next/leads/${selectedLead.id}/call-logs`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const callRes = await fetch(`${BACKEND_BASE_URL}/next/leads/${selectedLead.id}/call-logs`, { headers: getAuthHeaders(false) });
       if (callRes.ok) { const c = await callRes.json(); if (c.status === 'success') setLeadCallLogs(c.data || []); }
     } catch (err) { console.error(err); } finally { setCallsLoading(false); }
   };
@@ -120,9 +113,8 @@ export default function LeadDrawer({ lead, onClose, onUpdate }: LeadDrawerProps)
 
   const handleRecalculateScore = async () => {
     setScoringLoading(true);
-    const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/${selectedLead.id}/recalculate-score`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await fetch(`${BACKEND_BASE_URL}/next/leads/${selectedLead.id}/recalculate-score`, { method: 'POST', headers: getAuthHeaders(false) });
       if (res.ok) { fetchLeadSubData(selectedLead.id); }
     } catch (err) { console.error(err); } finally { setScoringLoading(false); }
   };
@@ -130,18 +122,16 @@ export default function LeadDrawer({ lead, onClose, onUpdate }: LeadDrawerProps)
   const handleConvertToOfficialClient = async () => {
     if (!confirm(`👑 ناظر گرامی، آیا از ارتقای متقاضی اطمینان دارید؟`)) return;
     setIsSubmittingConversion(true);
-    const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/convert-to-client`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: lead.id }) });
+      const res = await fetch(`${BACKEND_BASE_URL}/next/leads/convert-to-client`, { method: 'POST', headers: getAuthHeaders(false), body: JSON.stringify({ lead_id: lead.id }) });
       if (res.ok) { if (onClose) onClose(); if (onUpdate) onUpdate(); }
     } catch (e) { console.error(e); } finally { setIsSubmittingConversion(false); }
   };
 
   const handleAddTask = async () => {
     if (!newTask.title) return alert('عنوان وظیفه را وارد کنید.');
-    const token = localStorage.getItem('token');
-    await fetch(`${BACKEND_BASE_URL}/api/next/tasks`, {
-      method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    await fetch(`${BACKEND_BASE_URL}/next/tasks`, {
+      method: 'POST', headers: getAuthHeaders(false),
       body: JSON.stringify({ lead_id: selectedLead.id, task_title: newTask.title, due_date_shamsi: newTask.date, has_reminder: 0, assigned_agent_id: newTask.assigned_agent_id }),
     });
     fetchLeadSubData(selectedLead.id);
@@ -149,15 +139,13 @@ export default function LeadDrawer({ lead, onClose, onUpdate }: LeadDrawerProps)
 
   const handleMergeLeads = async () => {
     if (!masterLeadId) return alert('آیدی لید اصلی الزامی است.');
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/merge`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ target_lead_id: selectedLead.id, master_lead_id: parseInt(masterLeadId) }) });
+    const res = await fetch(`${BACKEND_BASE_URL}/next/leads/merge`, { method: 'POST', headers: getAuthHeaders(false), body: JSON.stringify({ target_lead_id: selectedLead.id, master_lead_id: parseInt(masterLeadId) }) });
     if (res.ok) { onClose(); if (onUpdate) onUpdate(); }
   };
 
   const handleAddReminder = async () => {
-    const token = localStorage.getItem('token');
-    await fetch(`${BACKEND_BASE_URL}/api/next/reminders/store`, {
-      method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    await fetch(`${BACKEND_BASE_URL}/next/reminders/store`, {
+      method: 'POST', headers: getAuthHeaders(false),
       body: JSON.stringify({ lead_id: selectedLead.id, title: newReminder.title, description: newReminder.description, reminder_date_shamsi: newReminder.date, reminder_time: newReminder.time, notification_channels: ['in_app'] })
     });
     setNewReminder({ title: '', description: '', date: '', time: '09:00' });

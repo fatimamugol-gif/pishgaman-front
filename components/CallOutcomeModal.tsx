@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function CallOutcomeModal({ lead, taskId, onClose, onSuccess }: any) {
   const [outcome, setOutcome] = useState('consultation');
@@ -10,13 +11,11 @@ export default function CallOutcomeModal({ lead, taskId, onClose, onSuccess }: a
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  const BACKEND_BASE_URL = `http://${currentHost}:8000`; // خودکار آی‌پی سیستم شما را پورت ۸۰۰۰ جفت می‌کند
+  const BACKEND_BASE_URL = API_BASE_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const token = localStorage.getItem('token');
 
     let finalOutcome = outcome;
     if (outcome === 'not_convenient') {
@@ -24,9 +23,9 @@ export default function CallOutcomeModal({ lead, taskId, onClose, onSuccess }: a
     }
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/leads/call-outcome`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/leads/call-outcome`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(false),
         body: JSON.stringify({
           lead_id: lead.id,
           task_id: taskId,
@@ -50,11 +49,10 @@ export default function CallOutcomeModal({ lead, taskId, onClose, onSuccess }: a
   };
 
   const handleLiveClickToDial = async () => {
-    const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/next/voip/click-to-dial`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/next/voip/click-to-dial`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(false),
         body: JSON.stringify({
           customer_phone: lead.phone,
           lead_id: lead.id
@@ -82,7 +80,7 @@ export default function CallOutcomeModal({ lead, taskId, onClose, onSuccess }: a
             <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">📞 ثبت وضعیت‌سنجی تماس (Follow-up)</h2>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">پرونده: <span className="font-bold text-indigo-600 dark:text-indigo-400">{lead.name}</span> | تلفن: <span className="font-mono dark:text-slate-300">{lead.phone}</span></p>
           </div>
-          <button type="button" onClick={onClose} className="w-6 h-6 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 font-bold transition-colors cursor-pointer">×</button>
+          <button type="button" onClick={onClose} className="w-6 h-6 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 font-bold text-lg transition-colors cursor-pointer">×</button>
         </div>
 
         {/* بدنه فرم */}

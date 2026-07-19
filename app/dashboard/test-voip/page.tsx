@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 export default function TestVoipPage() {
   const [leadId, setLeadId] = useState('');
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const BACKEND_URL = `http://${currentHost}:8000/api/next/leads`;
+    const BACKEND_BASE_URL = API_BASE_URL;
 
   const handleTestApi = async () => {
     if (!leadId) return alert('لطفاً ابتدا آیدی یک لید را وارد کنید.');
@@ -18,7 +18,7 @@ export default function TestVoipPage() {
     const token = localStorage.getItem('token');
     
     try {
-      const res = await fetch(`${BACKEND_URL}/${leadId}/call-logs`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/${leadId}/call-logs`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'

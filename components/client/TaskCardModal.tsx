@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 
 interface TaskCardModalProps {
   selectedTask: any;
@@ -26,7 +27,7 @@ export default function TaskCardModal({
   const [signatureText, setSignatureText] = useState('');
   const [isAgreed, setIsApproveCheckbox] = useState(false);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  const BACKEND_BASE_URL = API_BASE_URL; 
 
   // متد تایید ابلاغیه مشروط سندی
   const handleApproveDocTask = async () => {
@@ -36,7 +37,7 @@ export default function TaskCardModal({
     try {
       setIsSubmitting(true);
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://${currentHost}:8000/api/client-portal/tasks/${selectedTask.id}/complete`, {
+      const res = await fetch(`http://${BACKEND_BASE_URL}/client-portal/tasks/${selectedTask.id}/complete`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`, 
@@ -62,7 +63,7 @@ export default function TaskCardModal({
       const formData = new FormData();
       formData.append('file', uploadingFile, uploadingFile.name);
 
-      const res = await fetch(`http://${currentHost}:8000/api/client-portal/tasks/${selectedTask.id}/answer`, {
+      const res = await fetch(`http://${BACKEND_BASE_URL}/client-portal/tasks/${selectedTask.id}/answer`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
         body: formData

@@ -149,10 +149,21 @@ const loadLogsData = async () => {
   };
 
   // 🎯 تابع دریافت MAC Address (شبیه‌سازی)
+  // 🎯 دریافت یا تولید شناسه منحصر‌به‌فرد دستگاه (Device UUID)
   const getMacAddress = async (): Promise<string> => {
-    // در محیط واقعی، این باید از طریق API مرورگر یا سرور پروکسی دریافت شود
-    // فعلاً یک MAC آدرس نمونه برمی‌گردانیم
-    return '00:1A:2B:3C:4D:5E';
+    let deviceId = localStorage.getItem('app_device_uuid');
+    
+    if (!deviceId) {
+      // تولید یک UUID استاندارد و منحصر‌به‌فرد برای این دستگاه/مرورگر
+      const randomUuid = typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        
+      deviceId = `DEV-${randomUuid.toUpperCase()}`;
+      localStorage.setItem('app_device_uuid', deviceId);
+    }
+    
+    return deviceId;
   };
 
   const handleLeaveSubmit = async (e: React.FormEvent) => {

@@ -12,6 +12,7 @@ import AccountingManager from '@/components/staff/AccountingManager';
 import { API_BASE_URL, getAuthHeaders } from '@/lib/apiConfig';
 // 🎯 گام اول: ایمپورت اتمیک هاب مدیریت و پایش جلسات تخصصی
 import SessionsArchive from '@/components/staff/SessionsArchive';
+import { format } from 'date-fns-jalali';
 
 type StaffTabType = 'analytics' | 'tickets' | 'tasks' | 'knowledge' | 'accounting' | 'session';
 type QuickRangeType = 'today' | 'yesterday' | 'last_7_days' | 'last_30_days' | 'custom';
@@ -21,6 +22,10 @@ export default function AgentDashboardMainPage() {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('کارشناس محترم');
   const [userRole, setUserRole] = useState('agent');
+
+  const displayDate = task.due_date_iso 
+  ? format(new Date(task.due_date_iso), 'yyyy/MM/dd') 
+  : task.due_date_shamsi; // فالبک به رشته قدیمی در صورت نبود تایم‌استمپ
   
   const [activeTab, setActiveTab] = useState<StaffTabType>('analytics');
   const [activeDrawerLead, setActiveLeadForDrawer] = useState<any>(null);

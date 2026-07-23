@@ -20,6 +20,7 @@ export default function MacAddressManager() {
   const [mac1, setMac1] = useState('');
   const [mac2, setMac2] = useState('');
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     loadAgents();
@@ -41,27 +42,46 @@ export default function MacAddressManager() {
     setEditingAgent(agent);
     setMac1(agent.mac_address_1 || '');
     setMac2(agent.mac_address_2 || '');
+    setErrorMsg(null);
+  };
+
+  // اعتبارسنجی فرمت MAC Address
+  const isValidMac = (mac: string) => {
+    if (!mac) return true; // خالی بودن مجاز است
+    const regex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+    return regex.test(mac);
   };
 
   const handleSave = async () => {
     if (!editingAgent) return;
 
+    // بررسی فرمت صحیح قبل از ارسال
+    if (mac1 && !isValidMac(mac1)) {
+      setErrorMsg('فرمت آدرس MAC اول نامعتبر است (مثال: 00:1A:2B:3C:4D:5E)');
+      return;
+    }
+    if (mac2 && !isValidMac(mac2)) {
+      setErrorMsg('فرمت آدرس MAC دوم نامعتبر است (مثال: 00:1A:2B:3C:4D:5E)');
+      return;
+    }
+
     try {
       setSaving(true);
+      setErrorMsg(null);
+
       await staffService.updateAgentMacAddresses(
         editingAgent.id,
-        mac1 || null,
-        mac2 || null
+        mac1 ? mac1.toUpperCase() : null,
+        mac2 ? mac2.toUpperCase() : null
       );
       
-      // Refresh the list
       await loadAgents();
       setEditingAgent(null);
       setMac1('');
       setMac2('');
     } catch (error) {
       console.error('خطا در ذخیره MAC Address:', error);
-      alert('خطا در ذخیره MAC Address');
+      setErrorMsg('خطا در ذخیره اطلاعات. لطفاً مجدداً تلاش کنید.');
     } finally {
       setSaving(false);
     }
@@ -71,17 +91,13 @@ export default function MacAddressManager() {
     setEditingAgent(null);
     setMac1('');
     setMac2('');
+    setErrorMsg(null);
   };
 
   const formatMacAddress = (value: string) => {
-    // Auto-format MAC address as user types
-    const cleaned = value.replace(/[^a-fA-F0-9]/g, '');
-    if (cleaned.length <= 2) return cleaned;
-    if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}:${cleaned.slice(2)}`;
-    if (cleaned.length <= 6) return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}:${cleaned.slice(4)}`;
-    if (cleaned.length <= 8) return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}:${cleaned.slice(4, 6)}:${cleaned.slice(6)}`;
-    if (cleaned.length <= 10) return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}:${cleaned.slice(4, 6)}:${cleaned.slice(6, 8)}:${cleaned.slice(8)}`;
-    return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}:${cleaned.slice(4, 6)}:${cleaned.slice(6, 8)}:${cleaned.slice(8, 10)}:${cleaned.slice(10, 12)}`;
+    const cleaned = value.replace(/[^a-fA-F0-9]/g, '').toUpperCase();
+    const parts = cleaned.match(/.{1,2}/g) || [];
+    return parts.slice(0, 6).join(':');
   };
 
   if (loading) {
@@ -97,10 +113,16 @@ export default function MacAddressManager() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">مدیریت MAC Address کارشناسان</h2>
         <p className="text-gray-600 text-sm">
-          هر کارشناس می‌تواند حداکثر 2 MAC Address برای دستگاه‌های مجاز خود ثبت کند.
-          ثبت ورود/خروج فقط از دستگاه‌های مجاز امکان‌پذیر است.
+          آدرس‌های MAC به صورت خودکار در اولین و دومین ورود کارشناس ثبت و قفل می‌شوند. 
+          مدیران می‌توانند در صورت تعویض دستگاه کارشناس، آدرس‌های ثبت‌شده را از این بخش ویرایش یا پاک‌سازی نمایند.
         </p>
       </div>
+
+      {errorMsg && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+          {errorMsg}
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -139,15 +161,16 @@ export default function MacAddressManager() {
                   {editingAgent?.id === agent.id ? (
                     <input
                       type="text"
+                      maxLength={17}
                       value={mac1}
                       onChange={(e) => setMac1(formatMacAddress(e.target.value))}
                       placeholder="00:1A:2B:3C:4D:5E"
-                      className="text-sm border border-gray-300 rounded px-2 py-1 w-40"
+                      className="text-sm border border-gray-300 rounded px-2 py-1 w-44 font-mono uppercase"
                       dir="ltr"
                     />
                   ) : (
                     <div className="text-sm text-gray-500 font-mono" dir="ltr">
-                      {agent.mac_address_1 || '-'}
+                      {agent.mac_address_1 || <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">ثبت‌نشده (آزاد)</span>}
                     </div>
                   )}
                 </td>
@@ -155,15 +178,16 @@ export default function MacAddressManager() {
                   {editingAgent?.id === agent.id ? (
                     <input
                       type="text"
+                      maxLength={17}
                       value={mac2}
                       onChange={(e) => setMac2(formatMacAddress(e.target.value))}
                       placeholder="00:1A:2B:3C:4D:5F"
-                      className="text-sm border border-gray-300 rounded px-2 py-1 w-40"
+                      className="text-sm border border-gray-300 rounded px-2 py-1 w-44 font-mono uppercase"
                       dir="ltr"
                     />
                   ) : (
                     <div className="text-sm text-gray-500 font-mono" dir="ltr">
-                      {agent.mac_address_2 || '-'}
+                      {agent.mac_address_2 || <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">ثبت‌نشده (آزاد)</span>}
                     </div>
                   )}
                 </td>
@@ -178,7 +202,7 @@ export default function MacAddressManager() {
                       <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="text-green-600 hover:text-green-900 disabled:opacity-50"
+                        className="text-green-600 hover:text-green-900 disabled:opacity-50 font-bold"
                       >
                         {saving ? 'در حال ذخیره...' : 'ذخیره'}
                       </button>
@@ -194,7 +218,7 @@ export default function MacAddressManager() {
                       onClick={() => handleEdit(agent)}
                       className="text-indigo-600 hover:text-indigo-900"
                     >
-                      ویرایش
+                      ویرایش / آزادسازی
                     </button>
                   )}
                 </td>
